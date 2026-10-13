@@ -1,4 +1,4 @@
-import { type Hex, hashMessage, hexToNumber, isAddressEqual, slice } from "viem";
+import { type Address, type Hex, hashMessage, hexToNumber, isAddressEqual, slice } from "viem";
 import { CHAINS, type ChainConfig } from "../chains";
 import { fetchJson } from "../http";
 import { recoverVerified } from "../recover";
@@ -59,6 +59,35 @@ function recoverable(tx: MultisigTx, c: Confirmation): { hash: Hex; sig: Hex } |
     };
   }
   return null;
+}
+
+/**
+ * Recovers owners' public keys from a Safe's own confirmation history, in one request:
+ * owners usually sign off-chain, so this catches keys that never sent a transaction.
+ */
+export async function safeOwnerSignatures(
+  chain: ChainConfig,
+  safe: Address,
+  key?: string,
+): Promise<Map<string, { publicKey: Hex; url: string }>> {
+  const found = new Map<string, { publicKey: Hex; url: string }>();
+  if (!chain.safe) return found;
+  const r = await get<{ results: MultisigTx[] }>(chain, `/v2/safes/${safe}/multisig-transactions/?limit=100`, key);
+  for (const tx of r.results ?? []) {
+    for (const c of tx.confirmations ?? []) {
+      const owner = c.owner.toLowerCase();
+      if (found.has(owner)) continue;
+      const rs = recoverable(tx, c);
+      const publicKey = rs && (await recoverVerified(rs.hash, rs.sig, c.owner as Address));
+      if (publicKey) {
+        found.set(owner, {
+          publicKey,
+          url: `https://app.safe.global/transactions/tx?safe=${chain.safe}:${safe}&id=multisig_${safe}_${tx.safeTxHash}`,
+        });
+      }
+    }
+  }
+  return found;
 }
 
 /**

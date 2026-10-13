@@ -1,4 +1,4 @@
-import { type Address, type Hex, isAddressEqual, parseAbi } from "viem";
+import { type Address, type Hex, isAddressEqual } from "viem";
 import { CHAINS, addressUrl, txUrl, type ChainConfig } from "../chains";
 import { errorMessage } from "../http";
 import * as blockscout from "../providers/blockscout";
@@ -7,7 +7,7 @@ import { client } from "../providers/rpc";
 import { publicKeyFromTx } from "../recover";
 import type { ChainState, CheckContext } from "./context";
 
-const DELEGATION_PREFIX = "0xef0100";
+export const DELEGATION_PREFIX = "0xef0100";
 
 /**
  * Vectors A + B: nonce and code on every chain.
@@ -39,7 +39,7 @@ export async function scanChains(ctx: CheckContext): Promise<Map<number, ChainSt
             evidence: [{ label: "Delegate contract", url: addressUrl(chain, delegate) }],
           });
         } else if (code && code !== "0x") {
-          ctx.emit(await contractFinding(chain, ctx.address, ctx.keys.alchemy));
+          ctx.emit(contractFinding(chain));
         }
 
         ctx.emit({
@@ -58,17 +58,7 @@ export async function scanChains(ctx: CheckContext): Promise<Map<number, ChainSt
   return states;
 }
 
-async function contractFinding(chain: ChainConfig, address: Address, alchemyKey?: string) {
-  let owners: readonly Address[] = [];
-  try {
-    owners = await client(chain, alchemyKey).readContract({
-      address,
-      abi: parseAbi(["function getOwners() view returns (address[])"]),
-      functionName: "getOwners",
-    });
-  } catch {
-    /* not a Safe */
-  }
+function contractFinding(chain: ChainConfig) {
   return {
     id: `contract:${chain.id}`,
     vector: "contract" as const,
@@ -76,10 +66,7 @@ async function contractFinding(chain: ChainConfig, address: Address, alchemyKey?
     chainId: chain.id,
     chainName: chain.name,
     title: `Smart contract on ${chain.name}`,
-    detail: owners.length
-      ? `This is a Safe with ${owners.length} owner${owners.length === 1 ? "" : "s"}. A contract has no public key. What matters is whether its owners' keys leaked, so check each owner below.`
-      : "A contract has no public key of its own. What matters is the keys that control it (owners, signers, guardians).",
-    evidence: owners.map((o) => ({ label: `Owner ${o}`, url: `/check?address=${o}` })),
+    detail: "A contract has no private or public key of its own. What matters is the keys that control it. See the controller check.",
   };
 }
 

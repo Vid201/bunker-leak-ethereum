@@ -4,7 +4,7 @@ import { CHAINS, type ChainConfig } from "../chains";
 const clients = new Map<string, PublicClient>();
 
 /**
- * A client per chain that falls back across RPCs. We deliberately don't pass the
+ * A client per chain that falls back across RPCs. It deliberately doesn't pass the
  * viem chain object, so transactions come back in standard Ethereum format (no
  * OP-stack / zkSync / Celo formatters) – that's what signature recovery expects.
  */

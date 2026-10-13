@@ -20,6 +20,16 @@ suggests moving funds to addresses whose public key is still hidden behind a has
 
 Failed checks, unverified event candidates, or no successful checks produce an incomplete verdict unless stronger evidence establishes exposure. Optional checks skipped for missing keys or unsupported plans remain listed but do not prevent a “No leak found” verdict when other checks completed successfully. Event scans paginate; scans exceeding the browser work limit are explicitly marked incomplete.
 
+**Contract addresses** have no key of their own, so they get a controller check instead. It identifies:
+
+- Safe multisigs: owners, threshold and modules.
+- Coinbase Smart Wallets: address and passkey owners.
+- Kernel accounts: owner of the ECDSA validator.
+- Generic `owner()` / EIP-1967 proxy admins.
+
+Each controller is probed for exposure: signed txs, EIP-7702, Snapshot, and, for Safes, its own confirmations
+recovered from the Safe's history. The result is compared against the signing threshold.
+
 Every recovered key is checked against the address (`keccak256(pubkey)[12:] == address`) before it is shown.
 
 ## Run

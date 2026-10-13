@@ -9,6 +9,8 @@ vi.mock("../lib/checks/onchainSignatures", () => ({ checkOnchainSignatures: asyn
 import { runChecks } from "../lib/run";
 const address = "0x0000000000000000000000000000000000001234";
 const handlers = () => ({ onStart: vi.fn(), onFinding: vi.fn() });
+// Follow-up checks start once the chain scan resolves (it decides EOA vs contract).
+const tick = () => new Promise((r) => setTimeout(r));
 let storage: Map<string, string>;
 beforeEach(() => {
   vi.clearAllMocks();
@@ -54,6 +56,7 @@ it("shares in-flight results and detaches unsubscribed listeners", async () => {
   });
   const first = handlers();
   const original = runChecks(address, {}, first);
+  await tick();
   const second = handlers();
   const joined = runChecks(address, {}, second);
   expect(joined.done).toBe(original.done);
@@ -86,6 +89,7 @@ it("an older forced-overlap run cannot remove the newer run", async () => {
     .mockImplementationOnce(() => new Promise<void>(r => { finishNew = r; }));
   const old = runChecks(address, {}, handlers());
   const fresh = runChecks(address, {}, handlers(), { force: true });
+  await tick();
   finishOld();
   await old.done;
   expect(storage.size).toBe(0);

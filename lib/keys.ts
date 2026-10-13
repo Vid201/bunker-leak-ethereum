@@ -2,7 +2,7 @@ import { keccak256, toBytes } from "viem";
 
 /**
  * Optional API keys supplied by the user. They live only in this browser's
- * localStorage and are sent directly to each provider, never to us.
+ * localStorage and are sent directly to each provider, never to the site.
  */
 export interface ApiKeys {
   etherscan?: string;

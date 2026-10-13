@@ -1,5 +1,6 @@
 import { type Address, getAddress, isAddress } from "viem";
 import { normalize } from "viem/ens";
+import { checkContract, isContractAccount } from "./checks/contract";
 import { recoverFromTxs, scanChains } from "./checks/evm";
 import { checkFarcaster } from "./checks/farcaster";
 import { checkOnchainSignatures } from "./checks/onchainSignatures";
@@ -67,15 +68,20 @@ export function runChecks(
 
   entry.pending = (async () => {
     try {
-      await Promise.all([
-        (async () => {
-          const states = await scanChains(ctx);
-          await Promise.all([recoverFromTxs(ctx, states), checkOnchainSignatures(ctx, states)]);
-        })(),
-        checkSnapshot(ctx),
-        checkSafe(ctx),
-        checkFarcaster(ctx),
-      ]);
+      const states = await scanChains(ctx);
+      // A contract has no key of its own: check the keys that control it instead of
+      // EOA-only signals (Snapshot via ERC-1271 would otherwise look like an unrecoverable leak).
+      if (isContractAccount(states)) {
+        await checkContract(ctx, states);
+      } else {
+        await Promise.all([
+          recoverFromTxs(ctx, states),
+          checkOnchainSignatures(ctx, states),
+          checkSnapshot(ctx),
+          checkSafe(ctx),
+          checkFarcaster(ctx),
+        ]);
+      }
     } finally {
       if (running.get(key) === entry) running.delete(key);
       entry.listeners.clear();

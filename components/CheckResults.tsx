@@ -5,7 +5,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { CHAINS } from "@/lib/chains";
 import { type ApiKeys, keysFingerprint, keyStore } from "@/lib/keys";
 import { resolveTarget, runChecks } from "@/lib/run";
-import type { Finding, Status } from "@/lib/types";
+import type { Controller, Finding, Status } from "@/lib/types";
 import { recoveredKey, verdict } from "@/lib/verdict";
 
 interface Meta {
@@ -155,6 +155,26 @@ const VERDICT = {
     body: "There are strong signs that this address signed something public, but public-key recovery did not succeed. If you're planning a migration, it's reasonable to include this address.",
     cls: "bg-likely-bg text-likely border-likely/30",
   },
+  "contract-exposed": {
+    title: "Controlling keys are exposed",
+    body: "This is a smart contract, so it has no public key of its own. But enough of the keys that control it have revealed their public keys that, if ECDSA were broken, someone could take control. To prepare, you can rotate those owners to fresh addresses at your own pace.",
+    cls: "bg-exposed-bg text-exposed border-exposed/30",
+  },
+  "contract-likely": {
+    title: "Controlling keys may be exposed",
+    body: "This is a smart contract with no public key of its own. Some of its controllers couldn't be fully checked (nested contracts or unconfirmed signatures), and they might be enough to take control. Check the controllers below.",
+    cls: "bg-likely-bg text-likely border-likely/30",
+  },
+  "contract-clear": {
+    title: "Not enough controlling keys exposed",
+    body: "This is a smart contract with no public key of its own. Not enough of the keys that control it have revealed their public keys to take control. Owners who sign later will reveal theirs, so this can change.",
+    cls: "bg-clear-bg text-clear border-clear/30",
+  },
+  "contract-unknown": {
+    title: "Smart contract: controllers unknown",
+    body: "This is a smart contract, so it has no public key of its own. No owner, admin or signer was found. It may be immutable, or use an unrecognized setup. If it has controlling keys, check those addresses instead.",
+    cls: "bg-surface-2 text-muted border-border",
+  },
   none: {
     title: "No leak found",
     body: "None of the checked sources reveal this address's public key. A few places can't be checked from public data (see below), so keep that in mind.",
@@ -164,7 +184,7 @@ const VERDICT = {
 
 function VerdictBanner({ verdict: v, loading }: { verdict: keyof typeof VERDICT; loading: boolean }) {
   const d = VERDICT[v];
-  if (loading && (v === "none" || v === "inconclusive")) {
+  if (loading && (v === "none" || v === "inconclusive" || v === "contract-unknown")) {
     return <div className="rounded-xl border border-border bg-surface-2 p-5 text-muted">Scanning chains and signature databases…</div>;
   }
   return (
@@ -275,6 +295,7 @@ const VECTOR_LABEL: Record<Finding["vector"], string> = {
   tx: "Transaction",
   eip7702: "EIP-7702",
   contract: "Contract",
+  control: "Who controls it",
   "onchain-signature": "On-chain signature",
   snapshot: "Snapshot",
   safe: "Safe multisig",
@@ -290,6 +311,7 @@ function FindingCard({ f }: { f: Finding }) {
       </div>
       <div className="mt-1 font-medium">{f.title}</div>
       {f.detail && <p className="mt-1 text-sm leading-relaxed text-muted">{f.detail}</p>}
+      {f.controllers && f.controllers.length > 0 && <ControllerList controllers={f.controllers} threshold={f.threshold} />}
       {f.evidence && f.evidence.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
           {f.evidence.map((e, i) => (
@@ -309,6 +331,40 @@ function FindingCard({ f }: { f: Finding }) {
           ))}
         </ul>
       )}
+    </div>
+  );
+}
+
+const KIND_LABEL: Record<Controller["kind"], string> = { eoa: "Key", contract: "Contract", passkey: "Passkey" };
+
+function ControllerList({ controllers, threshold }: { controllers: Controller[]; threshold?: number }) {
+  return (
+    <div className="mt-3">
+      {threshold !== undefined && controllers.length > 1 && (
+        <div className="mb-1.5 text-xs text-muted">
+          {threshold === 1 ? `Any 1 of ${controllers.length} can act` : `Needs ${threshold} of ${controllers.length} to act`}
+        </div>
+      )}
+      <ul className="divide-y divide-border rounded-md border border-border">
+        {controllers.map((c, i) => (
+          <li key={c.address ?? `${c.label}-${i}`} className="flex items-start gap-2.5 px-3 py-2">
+            <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${DOT[c.status]}`} title={c.status} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[11px] uppercase tracking-wide text-muted">{KIND_LABEL[c.kind]}</span>
+                {c.url?.startsWith("/") ? (
+                  <Link href={c.url} className="break-all font-mono text-xs text-accent underline">
+                    {c.label}
+                  </Link>
+                ) : (
+                  <span className="break-all font-mono text-xs">{c.label}</span>
+                )}
+              </div>
+              <div className="text-xs text-muted">{c.reason}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
