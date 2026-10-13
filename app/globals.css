@@ -1,26 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --bg: #f6f5f1;
+  --surface: #ffffff;
+  --surface-2: #efede6;
+  --border: #dcd8cc;
+  --text: #1b1a17;
+  --muted: #6b675d;
+  --accent: #3d5a3a;
+  --exposed: #b42318;
+  --exposed-bg: #fdecea;
+  --likely: #a15c07;
+  --likely-bg: #fdf3e1;
+  --clear: #2f6f3e;
+  --clear-bg: #e8f3ea;
+  --info: #3a5a8c;
+  --info-bg: #e9eff8;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #11120f;
+    --surface: #1a1b17;
+    --surface-2: #23241f;
+    --border: #34362e;
+    --text: #ecebe4;
+    --muted: #9c9a8f;
+    --accent: #a3c49b;
+    --exposed: #f97066;
+    --exposed-bg: #3a1714;
+    --likely: #f5b453;
+    --likely-bg: #3a2a10;
+    --clear: #7fd18f;
+    --clear-bg: #15301c;
+    --info: #8fb1e6;
+    --info-bg: #17243a;
   }
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-exposed: var(--exposed);
+  --color-exposed-bg: var(--exposed-bg);
+  --color-likely: var(--likely);
+  --color-likely-bg: var(--likely-bg);
+  --color-clear: var(--clear);
+  --color-clear-bg: var(--clear-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+a {
+  text-underline-offset: 3px;
+}
+
+/* Keep the embedded tweet in our palette and width. */
+.tweet-wrap .react-tweet-theme {
+  margin: 0 !important;
+  max-width: 100% !important;
+  --tweet-container-margin: 0;
 }
