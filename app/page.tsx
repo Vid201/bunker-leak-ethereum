@@ -1,12 +1,30 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { AddressForm } from "@/components/AddressForm";
 import { CoverageSections, Footer, MigrationTips } from "@/components/InfoSections";
 import { SiteHeader } from "@/components/SiteHeader";
 import { DRAKE_TWEET_URL, TweetCard, TweetFallback } from "@/components/TweetCard";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
+
+export const metadata: Metadata = { alternates: { canonical: `${SITE_URL}/` } };
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: SITE_NAME,
+  url: `${SITE_URL}/`,
+  description: SITE_DESCRIPTION,
+  applicationCategory: "SecurityApplication",
+  operatingSystem: "Any",
+  browserRequirements: "Requires JavaScript",
+  isAccessibleForFree: true,
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+};
 
 export default function Home() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-6 sm:py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <SiteHeader />
 
       <section className="mt-10 sm:mt-14">
