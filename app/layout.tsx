@@ -28,6 +28,8 @@ export const metadata: Metadata = {
     locale: "en_US",
   },
   twitter: { card: "summary_large_image", title: SITE_TITLE, description: SITE_DESCRIPTION },
+  // Google Search Console ownership check.
+  verification: { google: "WAdZYlB3Gay19Zld0FVKEJARiPMn0STT4SfVssw5fyg" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
